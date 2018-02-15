@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2014, 2017-2018 The  Linux Foundation. All rights reserved.
+ * Copyright (C) 2014, 2017 The  Linux Foundation. All rights reserved.
  * Not a contribution
  * Copyright (C) 2008 The Android Open Source Project
  *
@@ -21,6 +22,8 @@
 
 #include <log/log.h>
 #include <cutils/properties.h>
+#include <cutils/log.h>
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -73,6 +76,9 @@ char const*const LCD_FILE
 
 char const*const LCD_FILE2
         = "/sys/class/backlight/panel0-backlight/brightness";
+
+char const*const BUTTON_FILE
+        = "/sys/class/leds/button-backlight/brightness";
 
 char const*const RED_BLINK_FILE
         = "/sys/class/leds/red/blink";
@@ -189,6 +195,7 @@ set_speaker_light_locked(struct light_device_t* dev,
         struct light_state_t const* state)
 {
     int red, green, blue, white, yellow, purple, cyan;
+    int red, green, blue;
     int blink;
     int onMS, offMS;
     unsigned int colorRGB;
@@ -223,7 +230,6 @@ set_speaker_light_locked(struct light_device_t* dev,
     yellow = colorRGB & 0xFF;
     purple = colorRGB & 0xFF;
     cyan = colorRGB & 0xFF;
-
 
     if (onMS > 0 && offMS > 0) {
         /*
@@ -269,6 +275,17 @@ set_speaker_light_locked(struct light_device_t* dev,
             if (write_int(CYAN_BLINK_FILE, blink))
                 write_int(CYAN_LED_FILE, 0);
         }
+
+	}
+        if (green) {
+            if (write_int(GREEN_BLINK_FILE, blink))
+                write_int(GREEN_LED_FILE, 0);
+	}
+        if (blue) {
+            if (write_int(BLUE_BLINK_FILE, blink))
+                write_int(BLUE_LED_FILE, 0);
+	}
+
     } else {
         write_int(RED_LED_FILE, red);
         write_int(GREEN_LED_FILE, green);
@@ -329,6 +346,20 @@ set_light_attention(struct light_device_t* dev,
     return 0;
 }
 
+static int
+set_light_buttons(struct light_device_t* dev,
+        struct light_state_t const* state)
+{
+    int err = 0;
+    if(!dev) {
+        return -1;
+    }
+    pthread_mutex_lock(&g_lock);
+    err = write_int(BUTTON_FILE, state->color & 0xFF);
+    pthread_mutex_unlock(&g_lock);
+    return err;
+}
+
 /** Close the lights device */
 static int
 close_lights(struct light_device_t *dev)
@@ -359,6 +390,14 @@ static int open_lights(const struct hw_module_t* module, char const* name,
         set_light = set_light_battery;
     else if (0 == strcmp(LIGHT_ID_NOTIFICATIONS, name))
         set_light = set_light_notifications;
+    if (0 == strcmp(LIGHT_ID_BACKLIGHT, name))
+        set_light = set_light_backlight;
+    else if (0 == strcmp(LIGHT_ID_BATTERY, name))
+        set_light = set_light_battery;
+    else if (0 == strcmp(LIGHT_ID_NOTIFICATIONS, name))
+        set_light = set_light_notifications;
+    else if (0 == strcmp(LIGHT_ID_BUTTONS, name))
+        set_light = set_light_buttons;
     else if (0 == strcmp(LIGHT_ID_ATTENTION, name))
         set_light = set_light_attention;
     else
