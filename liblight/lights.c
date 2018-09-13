@@ -280,12 +280,13 @@ set_speaker_light_locked(struct light_device_t* dev,
         if (green) {
             if (write_int(GREEN_BLINK_FILE, blink))
                 write_int(GREEN_LED_FILE, 0);
-	}
+        }
         if (blue) {
             if (write_int(BLUE_BLINK_FILE, blink))
                 write_int(BLUE_LED_FILE, 0);
 	}
 
+        }
     } else {
         write_int(RED_LED_FILE, red);
         write_int(GREEN_LED_FILE, green);
@@ -392,7 +393,7 @@ static int open_lights(const struct hw_module_t* module, char const* name,
         set_light = set_light_notifications;
     if (0 == strcmp(LIGHT_ID_BACKLIGHT, name))
         set_light = set_light_backlight;
-    else if (0 == strcmp(LIGHT_ID_BATTERY, name))
+    } else if (0 == strcmp(LIGHT_ID_BATTERY, name))
         set_light = set_light_battery;
     else if (0 == strcmp(LIGHT_ID_NOTIFICATIONS, name))
         set_light = set_light_notifications;
